@@ -26,6 +26,11 @@ public class UserQueueController {
 
 	private final UserQueueService userQueueService;
 
+	@GetMapping("/hello")
+	public String helloWorld(){
+		return "hello";
+	}
+	
 	// 대기 등록
 	@PostMapping("")
 	public Mono<RegisterUserResponse> registerUser(@RequestParam(name = "queue", defaultValue = "default") String queue,
