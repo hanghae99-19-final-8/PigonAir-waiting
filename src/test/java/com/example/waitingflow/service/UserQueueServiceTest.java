@@ -45,13 +45,13 @@ class UserQueueServiceTest {
 		// StepVerifier.create(Mono.delay(Duration.ofSeconds(1)))
 		// 	.consumeNextWith(delay -> System.out.println("1초 딜레이 발생"))
 		// 	.verifyComplete();
-		StepVerifier.create(userQueueService.registerWaitQueue("default", 10L))
+		StepVerifier.create(userQueueService.registerWaitQueue("default", 101L))
 			.expectNext(2L)
 			.verifyComplete();
 		// StepVerifier.create(Mono.delay(Duration.ofSeconds(1)))
 		// 	.consumeNextWith(delay -> System.out.println("1초 딜레이 발생"))
 		// 	.verifyComplete();
-		StepVerifier.create(userQueueService.registerWaitQueue("default", 1L))
+		StepVerifier.create(userQueueService.registerWaitQueue("default", 102L))
 			.expectNext(3L)
 			.verifyComplete();
 
