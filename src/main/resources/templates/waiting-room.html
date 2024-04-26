@@ -53,6 +53,13 @@
                           document.querySelector("#updated").innerHTML = new Date();
 
                           const newUrl = window.location.origin + window.location.pathname + window.location.search;
+                          console.log(newUrl)
+                          console.log(window.location.pathname)
+                          console.log(window.location.search)
+                          // 딜레이를 주고 나서 리디렉션 실행
+                          // setTimeout(() => {
+                          //   window.location.href = newUrl;
+                          // }, 20000);
                           window.location.href = newUrl;
                         })
                         .catch(error => console.log(error));

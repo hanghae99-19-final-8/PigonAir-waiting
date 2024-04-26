@@ -25,8 +25,11 @@ import reactor.core.publisher.Mono;
 public class UserQueueController {
 
 	private final UserQueueService userQueueService;
-
-	// 대기 등록
+	@GetMapping("/hello")
+	public String helloWorld(){
+		return "hello";
+	}
+	// 대기 등 록
 	@PostMapping("")
 	public Mono<RegisterUserResponse> registerUser(@RequestParam(name = "queue", defaultValue = "default") String queue,
 		@RequestParam(name = "user_id") Long userId) {
