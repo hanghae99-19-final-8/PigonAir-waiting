@@ -1,3 +1,4 @@
+
 package com.example.waitingflow.controller;
 
 import org.springframework.http.HttpCookie;
@@ -11,6 +12,9 @@ import com.example.waitingflow.service.UserQueueService;
 
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
+
+import org.springframework.http.ResponseCookie;
+
 
 @RequiredArgsConstructor
 @Controller
@@ -26,11 +30,14 @@ public class WaitingRoomController {
 		String key = "user-queue-%s-token".formatted(queue);
 		HttpCookie cookieValue = exchange.getRequest().getCookies().getFirst(key);
 		String token = cookieValue == null ? "" : cookieValue.getValue();
-
+		if(!token.equals("")){
+			redirectUrl = redirectUrl+"?wait_token="+token;
+		}
 		// 1. 입장이 허용되어 page redirect(이동)이 가능한지?
+		String finalRedirectUrl = redirectUrl;
 		return userQueueService.isAllowedByToken(queue, userId, token)
 			.filter(allowed -> allowed)
-			.flatMap(allowed -> Mono.just(Rendering.redirectTo(redirectUrl).build()))
+			.flatMap(allowed -> Mono.just(Rendering.redirectTo(finalRedirectUrl).build()))
 			.switchIfEmpty(
 				// 대기 등록. 이미 있으면 웹 페이지에 필요한 데이터 전달
 				userQueueService.registerWaitQueue(queue, userId)
@@ -43,4 +50,3 @@ public class WaitingRoomController {
 			);
 	}
 }
-
