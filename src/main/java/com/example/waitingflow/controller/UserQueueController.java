@@ -29,7 +29,7 @@ public class UserQueueController {
 	public String helloWorld(){
 		return "hello";
 	}
-	// 대기 등록
+	// 대기 등 록
 	@PostMapping("")
 	public Mono<RegisterUserResponse> registerUser(@RequestParam(name = "queue", defaultValue = "default") String queue,
 		@RequestParam(name = "user_id") Long userId) {
