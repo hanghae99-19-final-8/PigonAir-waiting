@@ -1,11 +1,14 @@
 package com.example.waitingflow.service;
 
 import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
@@ -18,6 +21,7 @@ import com.example.waitingflow.exception.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.function.Tuples;
 
 @Slf4j
@@ -34,13 +38,13 @@ public class UserQueueService {
 	private final String USER_QUEUE_WAIT_KEY_FOR_SCAN = "users:queue:*:wait";
 	private final String USER_QUEUE_PROCEED_KEY = "users:queue:%s:proceed";
 
+	// 이전에 생성한 토큰을 저장할 메모리 캐시
+	private final Map<String, String> tokenCache = new ConcurrentHashMap<>();
+
 	public Mono<Long> registerWaitQueue(final String queue, final Long userId) {
 		// 먼저 등록한 사람이 높은 랭크를 갖도록 redis의 sortedset<userId,unix timestamp> 사용.
 		// 등록과 동시에 몇 번째 대기인지 리턴
-		ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-		System.out.println("registerWaitQueue 총 스레드 수: " + threadMXBean.getThreadCount());
-		System.out.println("registerWaitQueue 현재 활성화된 스레드 수: " + threadMXBean.getThreadCount());
-		System.out.println("registerWaitQueue 현재 대기 중인 스레드 수: " + (threadMXBean.getThreadCount() - threadMXBean.getDaemonThreadCount()));
+
 		long unixTimestamp = Instant.now().getEpochSecond();
 
 		return reactiveRedisTemplate.opsForZSet()
@@ -65,9 +69,9 @@ public class UserQueueService {
 			.map(rank -> rank >= 0);
 	}
 
-	public Mono<Boolean> isAllowedByToken(final String queue, final Long userId, final String token) {
-		return generateToken(queue, userId)
-			.map(genToken -> genToken.equalsIgnoreCase(token));
+	public Mono<Boolean> isAllowedByToken(final String queue, final Long userId,final Long flightId, final String token) {
+		return generateToken(queue, userId,flightId)
+			.map(genToken -> genToken.equals(token));
 	}
 
 	public Mono<Long> getRank(final String queue, final Long userId) {
@@ -76,12 +80,39 @@ public class UserQueueService {
 			.map(rank -> rank >= 0 ? rank + 1 : rank);
 	}
 
-	public Mono<String> generateToken(final String queue, final Long userId) {
-		MessageDigest digest = null;
-		try {
-			digest = MessageDigest.getInstance("SHA-256");
+	// public Mono<String> generateToken(final String queue, final Long userId) {
+	// 	MessageDigest digest = null;
+	// 	try {
+	// 		digest = MessageDigest.getInstance("SHA-256");
+	//
+	// 		String input = "user-queue-%s-%d".formatted(queue, userId);
+	// 		byte[] encodedHash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
+	//
+	// 		StringBuilder hexString = new StringBuilder();
+	// 		for (byte aByte: encodedHash) {
+	// 			hexString.append(String.format("%02x", aByte));
+	// 		}
+	//
+	// 		return Mono.just(hexString.toString());
+	// 	} catch (NoSuchAlgorithmException e) {
+	// 		throw new RuntimeException(e);
+	// 	}
+	// }
+	public Mono<String> generateToken(final String queue, final Long userId,final Long flightId) {
+		// 캐시에서 해당 토큰을 찾아 반환
+		String cachedToken = tokenCache.get(generateCacheKey(queue, userId,flightId));
+		if (cachedToken != null) {
+			return Mono.just(cachedToken);
+		}
 
-			String input = "user-queue-%s-%d".formatted(queue, userId);
+		// 캐시에 없으면 새로운 토큰을 생성하고 캐시에 저장
+		return generateTokenAndCache(queue, userId, flightId);
+	}
+	private Mono<String> generateTokenAndCache(final String queue, final Long userId,final Long flightId) {
+		return Mono.fromCallable(() -> {
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+			String input = "user-queue-%s-%d-%d".formatted(queue, userId,flightId);
 			byte[] encodedHash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
 
 			StringBuilder hexString = new StringBuilder();
@@ -89,10 +120,14 @@ public class UserQueueService {
 				hexString.append(String.format("%02x", aByte));
 			}
 
-			return Mono.just(hexString.toString());
-		} catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException(e);
-		}
+			// 생성한 토큰을 캐시에 저장
+			tokenCache.put(generateCacheKey(queue, userId,flightId), hexString.toString());
+
+			return hexString.toString();
+		}).subscribeOn(Schedulers.boundedElastic());
+	}
+	private String generateCacheKey(String queue, Long userId,Long flightId) {
+		return queue + "-" + userId + "-" +flightId;
 	}
 
 	@Scheduled(initialDelay = 5000, fixedDelay = 1000) // 서버가 시작되고 5초후 1초 주기로 실행

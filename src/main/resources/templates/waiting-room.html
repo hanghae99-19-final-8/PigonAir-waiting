@@ -39,7 +39,8 @@
   function fetchWaitingRank() {
     const queue = '[[${queue}]]';
     const userId = '[[${userId}]]';
-    const queryParam = new URLSearchParams({queue: queue, user_id: userId});
+    const flightId = '[[${flightId}]]';
+    const queryParam = new URLSearchParams({queue: queue, user_id: userId,flight_id: flightId });
 
     fetch("/api/v1/queue/rank?" + queryParam)
             .then(response => response.json())
@@ -53,6 +54,13 @@
                           document.querySelector("#updated").innerHTML = new Date();
 
                           const newUrl = window.location.origin + window.location.pathname + window.location.search;
+                          console.log(newUrl)
+                          console.log(window.location.pathname)
+                          console.log(window.location.search)
+                          // 딜레이를 주고 나서 리디렉션 실행
+                          // setTimeout(() => {
+                          //   window.location.href = newUrl;
+                          // }, 20000);
                           window.location.href = newUrl;
                         })
                         .catch(error => console.log(error));

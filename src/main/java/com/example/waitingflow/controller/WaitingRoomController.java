@@ -1,3 +1,4 @@
+
 package com.example.waitingflow.controller;
 
 import org.springframework.http.HttpCookie;
@@ -12,6 +13,9 @@ import com.example.waitingflow.service.UserQueueService;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import org.springframework.http.ResponseCookie;
+
+
 @RequiredArgsConstructor
 @Controller
 public class WaitingRoomController {
@@ -21,16 +25,20 @@ public class WaitingRoomController {
 	@GetMapping("/waiting-room")
 	public Mono<Rendering> waitingRoomPage(@RequestParam(name = "queue", defaultValue = "default") String queue,
 		@RequestParam(name = "user_id") Long userId,
+		@RequestParam(name = "flight_id") Long flightId,
 		@RequestParam(name = "redirect_url") String redirectUrl,
 		ServerWebExchange exchange) {
 		String key = "user-queue-%s-token".formatted(queue);
 		HttpCookie cookieValue = exchange.getRequest().getCookies().getFirst(key);
 		String token = cookieValue == null ? "" : cookieValue.getValue();
-
+		if(!token.equals("")){
+			redirectUrl = redirectUrl+"?wait_token="+token;
+		}
 		// 1. 입장이 허용되어 page redirect(이동)이 가능한지?
-		return userQueueService.isAllowedByToken(queue, userId, token)
+		String finalRedirectUrl = redirectUrl;
+		return userQueueService.isAllowedByToken(queue, userId,flightId, token)
 			.filter(allowed -> allowed)
-			.flatMap(allowed -> Mono.just(Rendering.redirectTo(redirectUrl).build()))
+			.flatMap(allowed -> Mono.just(Rendering.redirectTo(finalRedirectUrl).build()))
 			.switchIfEmpty(
 				// 대기 등록. 이미 있으면 웹 페이지에 필요한 데이터 전달
 				userQueueService.registerWaitQueue(queue, userId)
@@ -38,9 +46,9 @@ public class WaitingRoomController {
 					.map(rank -> Rendering.view("waiting-room.html")
 						.modelAttribute("number", rank)
 						.modelAttribute("userId", userId)
+						.modelAttribute("flightId", flightId)
 						.modelAttribute("queue", queue)
 						.build())
 			);
 	}
 }
-

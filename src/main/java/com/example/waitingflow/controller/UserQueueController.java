@@ -25,7 +25,10 @@ import reactor.core.publisher.Mono;
 public class UserQueueController {
 
 	private final UserQueueService userQueueService;
-
+	@GetMapping("/hello")
+	public String helloWorld(){
+		return "hello";
+	}
 	// 대기 등록
 	@PostMapping("")
 	public Mono<RegisterUserResponse> registerUser(@RequestParam(name = "queue", defaultValue = "default") String queue,
@@ -46,8 +49,9 @@ public class UserQueueController {
 	@GetMapping("/allowed")
 	public Mono<AllowedUserResponse> isAllowedUser(@RequestParam(name = "queue", defaultValue = "default") String queue,
 		@RequestParam(name = "user_id") Long userId,
+		@RequestParam(name = "flight_id") Long flightId,
 		@RequestParam(name = "token") String token) {
-		return userQueueService.isAllowedByToken(queue, userId, token)
+		return userQueueService.isAllowedByToken(queue, userId,flightId, token)
 			.map(AllowedUserResponse::new);
 	}
 
@@ -61,9 +65,10 @@ public class UserQueueController {
 	@GetMapping("/touch")
 	Mono<?> touch(@RequestParam(name = "queue", defaultValue = "default") String queue,
 		@RequestParam(name = "user_id") Long userId,
+		@RequestParam(name = "flight_id") Long flightId,
 		ServerWebExchange exchange) {
 		// SeverWebExcange -> HttpServletRequest와 HttpServletResponse를 대체하는 역할
-		return Mono.defer(() -> userQueueService.generateToken(queue, userId))
+		return Mono.defer(() -> userQueueService.generateToken(queue, userId,flightId))
 			.map(token -> {
 				exchange.getResponse().addCookie(
 					ResponseCookie
