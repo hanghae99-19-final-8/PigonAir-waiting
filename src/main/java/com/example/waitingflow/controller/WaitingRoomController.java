@@ -1,4 +1,3 @@
-
 package com.example.waitingflow.controller;
 
 import org.springframework.http.HttpCookie;
@@ -52,3 +51,4 @@ public class WaitingRoomController {
 			);
 	}
 }
+
