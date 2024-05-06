@@ -45,13 +45,13 @@ class UserQueueServiceTest {
 		// StepVerifier.create(Mono.delay(Duration.ofSeconds(1)))
 		// 	.consumeNextWith(delay -> System.out.println("1초 딜레이 발생"))
 		// 	.verifyComplete();
-		StepVerifier.create(userQueueService.registerWaitQueue("default", 10L))
+		StepVerifier.create(userQueueService.registerWaitQueue("default", 101L))
 			.expectNext(2L)
 			.verifyComplete();
 		// StepVerifier.create(Mono.delay(Duration.ofSeconds(1)))
 		// 	.consumeNextWith(delay -> System.out.println("1초 딜레이 발생"))
 		// 	.verifyComplete();
-		StepVerifier.create(userQueueService.registerWaitQueue("default", 1L))
+		StepVerifier.create(userQueueService.registerWaitQueue("default", 102L))
 			.expectNext(3L)
 			.verifyComplete();
 
@@ -154,21 +154,21 @@ class UserQueueServiceTest {
 
 	@Test
 	void isNotAllowedByToken() {
-		StepVerifier.create(userQueueService.isAllowedByToken("default", 100L, ""))
+		StepVerifier.create(userQueueService.isAllowedByToken("default", 100L,1L, ""))
 			.expectNext(false)
 			.verifyComplete();
 	}
 
 	@Test
 	void isAllowedByToken() {
-		StepVerifier.create(userQueueService.isAllowedByToken("default", 100L, "d333a5d4eb24f3f5cdd767d79b8c01aad3cd73d3537c70dec430455d37afe4b8"))
+		StepVerifier.create(userQueueService.isAllowedByToken("default", 100L,1L, "d333a5d4eb24f3f5cdd767d79b8c01aad3cd73d3537c70dec430455d37afe4b8"))
 			.expectNext(true)
 			.verifyComplete();
 	}
 
 	@Test
 	void generateToken() {
-		StepVerifier.create(userQueueService.generateToken("default", 100L))
+		StepVerifier.create(userQueueService.generateToken("default", 100L,1L))
 			.expectNext("d333a5d4eb24f3f5cdd767d79b8c01aad3cd73d3537c70dec430455d37afe4b8")
 			.verifyComplete();
 	}
