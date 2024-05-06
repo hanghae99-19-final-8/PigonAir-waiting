@@ -80,24 +80,7 @@ public class UserQueueService {
 			.map(rank -> rank >= 0 ? rank + 1 : rank);
 	}
 
-	// public Mono<String> generateToken(final String queue, final Long userId) {
-	// 	MessageDigest digest = null;
-	// 	try {
-	// 		digest = MessageDigest.getInstance("SHA-256");
-	//
-	// 		String input = "user-queue-%s-%d".formatted(queue, userId);
-	// 		byte[] encodedHash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
-	//
-	// 		StringBuilder hexString = new StringBuilder();
-	// 		for (byte aByte: encodedHash) {
-	// 			hexString.append(String.format("%02x", aByte));
-	// 		}
-	//
-	// 		return Mono.just(hexString.toString());
-	// 	} catch (NoSuchAlgorithmException e) {
-	// 		throw new RuntimeException(e);
-	// 	}
-	// }
+
 	public Mono<String> generateToken(final String queue, final Long userId,final Long flightId) {
 		// 캐시에서 해당 토큰을 찾아 반환
 		String cachedToken = tokenCache.get(generateCacheKey(queue, userId,flightId));
